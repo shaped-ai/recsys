@@ -1,0 +1,17 @@
+name: Pylint autoflake, isort, black
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: python linting
+    runs-on: ubuntu-latest
+    steps:
+       - name: Python Linter
+         uses: jiwidi/python-lint-action@main
