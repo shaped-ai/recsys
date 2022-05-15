@@ -1,9 +1,7 @@
 # TorchRecSys
 
-
-[![Tests](https://github.com/jiwidi/torchrecsys/actions/workflows/pytest.yml/badge.svg)](https://github.com/jiwidi/torchrecsys/actions/workflows/pytest.yml)
-[![Code style check](https://github.com/jiwidi/torchrecsys/actions/workflows/linting.yml/badge.svg)](https://github.com/jiwidi/torchrecsys/actions/workflows/linting.yml)
-
+[![Pytest](https://github.com/jiwidi/torchrecsys/actions/workflows/pytest.yml/badge.svg)](https://github.com/jiwidi/torchrecsys/actions/workflows/pytest.yml)
+[![Pylint autoflake, isort, black](https://github.com/jiwidi/torchrecsys/actions/workflows/linting.yml/badge.svg)](https://github.com/jiwidi/torchrecsys/actions/workflows/linting.yml)
 
 
 Models I want to implement before v1
