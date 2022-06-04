@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 import torch
 from torch import nn
 
-from torchrecsys.models.bert_utils import BERTEmbedding, TransformerBlock
+from torchrecsys.models.sequential.bert_utils import BERTEmbedding, TransformerBlock
 from torchrecsys.models.utils import schema_to_featureModuleList
 
 
