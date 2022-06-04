@@ -92,6 +92,7 @@ def dummy_interaction_dataset(
         dummy_user_features,
         dummy_item_features,
         interaction_id="rating",
+        sample_negatives=4,
     )
 
 

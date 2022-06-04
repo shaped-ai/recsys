@@ -35,11 +35,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
         self.context_features = interactions[interactions.columns[3:]]
 
         self.user_features = dict(
-            # Eliminate user_id feature that is first on the matrix
-            zip(user_features[self.user_id], user_features.values[:, 1:])
-        )
-        self.user_features = dict(
-            # Eliminate user_id feature that is first on the matrix
             zip(
                 user_features[self.user_id],
                 user_features.drop(self.user_id, axis=1).to_numpy(dtype=int),
@@ -53,6 +48,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
         )
 
         if target_column and sample_negatives:
+            # TODO WRITE THIS LOGIC
             assert 1 == 0  # Error because logic wont work
 
         # Create a nice way of loading context + item features into a single
@@ -72,19 +68,39 @@ class InteractionsDataset(torch.utils.data.Dataset):
 
         self.interactions = interactions.values
         self.context_features = self.context_features.values
+        self.sample_negatives = sample_negatives
+        if self.sample_negatives > 0:
+            self.unique_items = item_features[self.item_id].unique()
         # To do add custom target column
 
     def __len__(self):
         return len(self.interactions)
 
+    def _sample_negative(self):
+        # TODO make this not sample already interacted items
+        return np.random.choice(self.unique_items)
+
     def __getitem__(self, idx):
         interaction = self.interactions[idx]
+        print(interaction)
+        user, item, target = interaction[0], interaction[1], interaction[2]
+        if self.sample_negatives > 0:
+            negative_dice = np.random.randint(1, self.sample_negatives + 1)
+            if negative_dice > 1:
+                item = self._sample_negative()
+                target = 0
+
         context_features = self.context_features[idx]
 
-        user_features = self.user_features[interaction[0]]
-        item_features = self.item_features[interaction[1]]
+        user_features = self.user_features[user]
+        item_features = self.item_features[item]
 
-        return interaction, context_features, user_features, item_features
+        return (
+            np.array([user, item, target]),
+            context_features,
+            user_features,
+            item_features,
+        )
 
     def __castdtypes(self, data):
         """Ensure needed dtypes for the data_Schema"""

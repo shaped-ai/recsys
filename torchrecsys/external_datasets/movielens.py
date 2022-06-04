@@ -16,7 +16,7 @@ ML_25M_URL = "http://files.grouplens.org/datasets/movielens/ml-25m.zip"
 
 
 class Movielens_1M(BaseDataset):
-    """Movielens 100k Dataset."""
+    """Movielens 1M Dataset."""
 
     def __init__(
         self,
@@ -24,7 +24,7 @@ class Movielens_1M(BaseDataset):
         data_url: str = ML_1M_URL,
         dataset_dir: str = DEFAULT_ROOT_DIR,
     ):
-        """Init Movielens_100k Class."""
+        """Init Movielens_1M Class."""
         super().__init__(
             dataset_name=dataset_name, data_url=data_url, dataset_dir=dataset_dir
         )
@@ -65,6 +65,52 @@ class Movielens_1M(BaseDataset):
             names=mnames,
             engine="python",
             encoding="ISO-8859-1",
+        )
+
+        return ratings, users, movies
+
+
+class Movielens_25M(BaseDataset):
+    """Movielens 25M Dataset."""
+
+    def __init__(
+        self,
+        dataset_name="ml-25m",
+        data_url: str = ML_25M_URL,
+        dataset_dir: str = DEFAULT_ROOT_DIR,
+    ):
+        """Init Movielens_25M Class."""
+        super().__init__(
+            dataset_name=dataset_name, data_url=data_url, dataset_dir=dataset_dir
+        )
+
+    def preprocess(self):
+        """Preprocess the dataset."""
+
+        # download and extract the dataset
+        # TODO add progress bar to download
+        r = requests.get(self.data_url)
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        z.extractall(self.src_path)
+
+    # not happy with current results but can work it out later
+    def load(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """ """
+        self.dataset_path = os.path.join(self.src_path, "ml-25m")
+        if not os.path.exists(self.dataset_path):
+            self.preprocess()
+
+        ratings_path = os.path.join(self.dataset_path, "ratings.csv")
+        ratings = pd.read_csv(
+            ratings_path,
+        )
+
+        users = ratings[["userId"]].drop_duplicates().reset_index()
+
+        # Movie information
+        movies_path = os.path.join(self.dataset_path, "movies.csv")
+        movies = pd.read_csv(
+            movies_path,
         )
 
         return ratings, users, movies

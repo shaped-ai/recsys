@@ -1,7 +1,8 @@
 import torch
 from pytorch_lightning import Trainer
 
-from torchrecsys.models import ALS, NCF, Bert4Rec
+from torchrecsys.models.scoring import ALS, NCF
+from torchrecsys.models.sequential import Bert4Rec
 from torchrecsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,

@@ -118,6 +118,13 @@ class ALS(BaseModel):
         item_opt.step()
 
         self.log(
+            "train/step_loss",
+            user_loss + item_loss,
+            on_step=True,
+            on_epoch=False,
+            prog_bar=False,
+        )
+        self.log(
             "train/user_step_loss",
             user_loss,
             on_step=True,
@@ -155,8 +162,6 @@ class ALS(BaseModel):
             self.item_biases.weight,
         ] + [layer.weight for layer in self.item_features if hasattr(layer, "weight")]
 
-        # Need to figure out how to do the custom loss steps, when i get
-        # internet
-        item_optimizer = torch.optim.SGD(user_weights, self.lr_rate)
-        user_optimizer = torch.optim.SGD(item_weights, self.lr_rate)
+        item_optimizer = torch.optim.AdamW(user_weights, self.lr_rate)
+        user_optimizer = torch.optim.AdamW(item_weights, self.lr_rate)
         return item_optimizer, user_optimizer
