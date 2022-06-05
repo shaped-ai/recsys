@@ -39,6 +39,8 @@ class DeepRetriever(BaseModel):
         self.user_embedding = nn.Embedding(self.n_users + 1, embedding_size)
         self.item_embedding = nn.Embedding(self.n_items + 1, embedding_size)
 
+        self.user_bias = nn.Embedding(self.n_users + 1, 1)
+        self.item_bias = nn.Embedding(self.n_items + 1, 1)
         # User mlp
         mlp_layers = [self.user_feature_dimension + embedding_size] + mlp_layers
         # TODO Add activation functions
@@ -72,22 +74,27 @@ class DeepRetriever(BaseModel):
         return similarity
         # TODO more funcs
 
-    def forward(self, interactions, context, users, items):
-        user = self.user_embedding(interactions[:, 0].long())
-        item = self.item_embedding(interactions[:, 1].long())
+    def forward(self, interactions, context, users_features, items_features):
+        user = interactions[:, 0].long()
+        item = interactions[:, 1].long()
 
-        user_features = self.encode_user(users)
-        item_features = self.encode_item(items)
+        user_factor = self.user_embedding(user)
+        item_factor = self.item_embedding(item)
 
-        user_factor = torch.cat([user, user_features], dim=1)
-        item_factor = torch.cat([item, item_features], dim=1)
+        user_features = self.encode_user(users_features)
+        item_features = self.encode_item(items_features)
+
+        user_factor = torch.cat([user_factor, user_features], dim=1)
+        item_factor = torch.cat([item_factor, item_features], dim=1)
 
         user_factor = self.user_mlp(user_factor)
         item_factor = self.item_mlp(item_factor)
 
-        yhat = self.sim_function(user_factor, item_factor)
+        user_bias = torch.squeeze(self.user_bias(user))
+        item_bias = torch.squeeze(self.item_bias(item))
+        yhat = self.sim_function(user_factor, item_factor) + user_bias + item_bias
 
-        return torch.sigmoid(yhat)
+        return yhat
 
     def encode_user(self, user):
         r = []
@@ -132,3 +139,27 @@ class DeepRetriever(BaseModel):
         optimizer = torch.optim.AdamW(self.parameters(), self.lr_rate)
 
         return optimizer
+
+    def generate_item_representations(self, interactions_dataset):
+        # TODO MAKE this run under pl
+        torch.set_grad_enabled(False)
+        self.eval()
+        item_feature_dict = interactions_dataset.item_features
+
+        # TODO OPTIMIZE THIS LOOP
+        items = []
+        items_features = []
+        for item in item_feature_dict.keys():
+            items.append(item)
+            items_features.append(item_feature_dict[item])
+        items = torch.tensor(items)
+        items_features = torch.tensor(items_features)
+
+        item_embeddings = self.item_embedding(items)
+        item_features = self.encode_item(items_features)
+
+        item_embeddings = torch.cat([item_embeddings, item_features], dim=1)
+        item_embeddings = self.item_mlp(item_embeddings)
+
+        torch.set_grad_enabled(True)
+        return item_embeddings

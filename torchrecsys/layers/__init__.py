@@ -1,4 +1,9 @@
-from .features import CategoricalLayer, FeatureLayer, NumericalLayer
-from .inference import BruteForceLayer
-
-__all__ = ["BruteForceLayer", "FeatureLayer", "CategoricalLayer", "NumericalLayer"]
+__all__ = (
+    [
+        "BruteForceLayer",
+        "FeatureLayer",
+        "CategoricalLayer",
+        "NumericalLayer",
+        "retrieve_nearest_neighbors",
+    ],
+)
