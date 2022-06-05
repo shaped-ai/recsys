@@ -1,6 +1,7 @@
 import torch
 from pytorch_lightning import Trainer
 
+from torchrecsys.models.retrieval import DeepRetriever
 from torchrecsys.models.scoring import ALS, NCF
 from torchrecsys.models.sequential import Bert4Rec
 from torchrecsys.test.fixtures import (  # NOQA
@@ -10,6 +11,20 @@ from torchrecsys.test.fixtures import (  # NOQA
     dummy_seq2seq_dataset,
     dummy_user_features,
 )
+
+
+def test_deepretriever(dummy_interaction_dataset):
+    dataloader = torch.utils.data.DataLoader(dummy_interaction_dataset, batch_size=2)
+    model = DeepRetriever(dummy_interaction_dataset.data_schema)
+    trainer = Trainer(max_epochs=1)
+    trainer.fit(model, dataloader)
+
+    pair = torch.tensor([[1, 2]])
+    context = torch.tensor([])
+    user = torch.tensor([[0, 1, 0, 1]])
+    item = torch.tensor([[0, 0]])
+
+    model(pair, context, user, item)
 
 
 def test_ncf(dummy_interaction_dataset):

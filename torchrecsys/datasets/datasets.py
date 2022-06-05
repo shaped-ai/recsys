@@ -272,3 +272,7 @@ class Seq2SeqDataset(torch.utils.data.Dataset):
             "item_features": self.item_pd_schema,
             "max_length": self.max_length,
         }
+
+
+class SparseInteractionsDataset(torch.utils.data.Dataset):
+    pass

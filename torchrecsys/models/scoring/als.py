@@ -23,9 +23,6 @@ class ALS(BaseModel):
         self.n_items = interactions_schema[1]
 
         # User features encoding
-        self.user_features = nn.ModuleList()
-        self.user_feature_dimension = 0
-
         self.user_features, self.user_feature_dimension = schema_to_featureModuleList(
             data_schema["user_features"], feature_embedding_size
         )
