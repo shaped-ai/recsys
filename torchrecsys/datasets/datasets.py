@@ -82,7 +82,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         interaction = self.interactions[idx]
-        print(interaction)
+
         user, item, target = interaction[0], interaction[1], interaction[2]
         if self.sample_negatives > 0:
             negative_dice = np.random.randint(1, self.sample_negatives + 1)
