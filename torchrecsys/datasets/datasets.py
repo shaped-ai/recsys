@@ -3,8 +3,65 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import torch
+from scipy import sparse
 
 from torchrecsys.datasets.utils import dataframe_schema
+
+
+class SparseInteractionsDataset(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        interactions,
+        user_features,
+        item_features,
+        user_id="user_id",
+        item_id="item_id",
+        interaction_id="interaction",
+    ):
+        self.user_id = user_id
+        self.item_id = item_id
+        self.interaction_id = interaction_id
+
+        # Check proper dataframe columns order
+        # Call assert subfunction to chekc user is first, item second and interaction third
+        # Assert in both user and item dfs too
+
+        interactions = interactions.groupby(user_id)[item_id].apply(list).to_dict()
+        item_count = item_features[item_id].max() + 1
+        # Build sparce matrix
+        user_row = []
+        for user, useritem in enumerate(interactions.values()):
+            for _ in range(len(useritem)):
+                user_row.append(user)
+
+        # Column indices for sparse matrix
+        item_col = []
+        for useritem in interactions.values():
+            item_col.extend(useritem)
+
+        # Construct sparse matrix
+        assert len(user_row) == len(item_col)
+        sparse_data = sparse.csr_matrix(
+            (np.ones(len(user_row)), (user_row, item_col)),
+            dtype="float64",
+            shape=(len(interactions), item_count),
+        )
+
+        # Convert to torch tensor
+        self.data = torch.FloatTensor(sparse_data.toarray())
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    @property
+    def data_schema(self):
+        return {
+            "n_users": self.data.shape[0],
+            "n_items": self.data.shape[1],
+        }
 
 
 class InteractionsDataset(torch.utils.data.Dataset):
@@ -17,7 +74,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
         item_id="item_id",
         interaction_id="interaction",
         sample_negatives=0,
-        target_column=None,
     ):
 
         self.user_id = user_id
@@ -47,9 +103,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
             )
         )
 
-        if target_column and sample_negatives:
-            # TODO WRITE THIS LOGIC
-            assert 1 == 0  # Error because logic wont work
+        # TODO write logic to not allow negative sampling with explicit target.
 
         # Create a nice way of loading context + item features into a single
         # dataset. Generate schema that models read from and are able to create
@@ -272,7 +326,3 @@ class Seq2SeqDataset(torch.utils.data.Dataset):
             "item_features": self.item_pd_schema,
             "max_length": self.max_length,
         }
-
-
-class SparseInteractionsDataset(torch.utils.data.Dataset):
-    pass
