@@ -1,9 +1,10 @@
-__all__ = (
-    [
-        "BruteForceLayer",
-        "FeatureLayer",
-        "CategoricalLayer",
-        "NumericalLayer",
-        "retrieve_nearest_neighbors",
-    ],
-)
+from .features import CategoricalLayer, FeatureLayer, NumericalLayer
+from .retrieval import retrieve_nearest_neighbors
+
+__all__ = [
+    "BruteForceLayer",
+    "FeatureLayer",
+    "CategoricalLayer",
+    "NumericalLayer",
+    "retrieve_nearest_neighbors",
+]
