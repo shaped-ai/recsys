@@ -288,7 +288,7 @@ class NetflixTest(torch.utils.data.Dataset):
         item_id: str = "item_id",
         mode: str = "train",
         random_seq_start: bool = False,
-        min_length: int = 1
+        min_length: int = 1,
     ):
         self.max_item_id = max_item_id
         self.sequence_id = sequence_id
@@ -323,14 +323,13 @@ class NetflixTest(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.sequences)
 
-
     def __getitem__(self, index):
         seq = self.sequences[index][0]
         if self.mode == "train" or self.mode == "validate":
 
-            if self.random_seq_start and not (len(seq)<self.min_length+1):
-                min_index = np.random.randint(0,len(seq)-self.min_length-2)
-                seq = seq[min_index:np.random.randint(min_index+1, len(seq))]
+            if self.random_seq_start and not (len(seq) < self.min_length + 1):
+                min_index = np.random.randint(0, len(seq) - self.min_length - 2)
+                seq = seq[min_index : np.random.randint(min_index + 1, len(seq))]
 
             tokens = seq[:-1]
             label = seq[-1]
@@ -342,9 +341,7 @@ class NetflixTest(torch.utils.data.Dataset):
                 label,
                 torch.LongTensor(features),
             )
-        elif (
-            self.mode == "inference"
-        ): 
+        elif self.mode == "inference":
             pass
 
     @property
@@ -354,4 +351,3 @@ class NetflixTest(torch.utils.data.Dataset):
             "item_features": self.item_pd_schema,
             "min_length": self.min_length,
         }
-

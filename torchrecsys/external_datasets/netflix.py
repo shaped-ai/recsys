@@ -1,6 +1,8 @@
 import os
 from typing import Tuple
+
 import pandas as pd
+
 from torchrecsys.external_datasets.base import DEFAULT_ROOT_DIR, BaseDataset
 
 
@@ -13,27 +15,28 @@ class Netflix(BaseDataset):
         data_url: str = "https://www.kaggle.com/datasets/netflix-inc/netflix-prize-data",
         dataset_dir: str = DEFAULT_ROOT_DIR,
         kaggle_username: str = "xxxx",
-        kaggle_api: str = "xxxxxxx"
+        kaggle_api: str = "xxxxxxx",
     ):
         """Init Netflix Class."""
         super().__init__(
             dataset_name=dataset_name, data_url=data_url, dataset_dir=dataset_dir
         )
-        os.environ['KAGGLE_USERNAME'] = kaggle_username
-        os.environ['KAGGLE_KEY'] = kaggle_api
+        os.environ["KAGGLE_USERNAME"] = kaggle_username
+        os.environ["KAGGLE_KEY"] = kaggle_api
 
     def download_dataset(self):
         """Download the dataset, requires Kaggle credentials"""
         import kaggle
-        
+
         print("Downloading dataset")
-        kaggle.api.dataset_download_files('netflix-inc/netflix-prize-data', path=self.dataset_path, unzip=True)
+        kaggle.api.dataset_download_files(
+            "netflix-inc/netflix-prize-data", path=self.dataset_path, unzip=True
+        )
         self.preprocess()
 
     def preprocess(self):
         """Preprocess the dataset."""
 
-        
         data = open(os.path.join(self.dataset_path, "data.csv"), mode="w")
 
         files = [
@@ -56,13 +59,13 @@ class Netflix(BaseDataset):
         data.close()
 
     def load(self) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
-        
+
         self.dataset_path = os.path.join(self.src_path, "netflix")
         if not os.path.exists(self.dataset_path):
             self.download_dataset()
         elif not os.path.isfile(os.path.join(self.dataset_path, "data.csv")):
             self.preprocess()
-            
+
         ratings = pd.read_csv(
             os.path.join(self.dataset_path, "data.csv"),
             names=["movie_id", "user_id", "rating", "date"],
@@ -70,11 +73,11 @@ class Netflix(BaseDataset):
             encoding="utf8",
             engine="python",
         )
-        
+
         movies = pd.read_csv(
-            os.path.join(self.dataset_path, "data.csv"), 
+            os.path.join(self.dataset_path, "data.csv"),
             names=["movie_id", "release_year", "title"],
-            encoding = "ISO-8859-1"
+            encoding="ISO-8859-1",
         )
 
         users = pd.Series(ratings["user_id"].unique())
