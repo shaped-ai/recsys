@@ -276,3 +276,78 @@ class Seq2SeqDataset(torch.utils.data.Dataset):
 
 class SparseInteractionsDataset(torch.utils.data.Dataset):
     pass
+
+
+class NetflixTest(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        sequences: pd.DataFrame,
+        item_features: pd.DataFrame,
+        max_item_id: int,
+        sequence_id: str = "sequence",
+        item_id: str = "item_id",
+        mode: str = "train",
+        random_seq_start: bool = False,
+        min_length: int = 1,
+    ):
+        self.max_item_id = max_item_id
+        self.sequence_id = sequence_id
+        self.item_id = item_id
+        self.mode = mode
+        self.random_seq_start = random_seq_start
+        self.min_length = min_length
+
+        self.sequences = sequences[[sequence_id]]
+        self.context_features = sequences.loc[:, sequences.columns != sequence_id]
+
+        self.item_features = dict(
+            zip(
+                item_features[self.item_id],
+                item_features.drop(self.item_id, axis=1).values,
+            )
+        )
+
+        self.item_features = defaultdict(
+            lambda: np.array(
+                [0 for feature in item_features.drop(self.item_id, axis=1)]
+            ),
+            self.item_features,
+        )
+        self.n_items = item_features[self.item_id].max() + 1
+
+        self.item_pd_schema = dataframe_schema(item_features.drop(self.item_id, axis=1))
+
+        self.sequences = self.sequences.values
+        self.context_features = self.context_features.values
+
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, index):
+        seq = self.sequences[index][0]
+        if self.mode == "train" or self.mode == "validate":
+
+            if self.random_seq_start and not (len(seq) < self.min_length + 1):
+                min_index = np.random.randint(0, len(seq) - self.min_length - 2)
+                seq = seq[min_index : np.random.randint(min_index + 1, len(seq))]
+
+            tokens = seq[:-1]
+            label = seq[-1]
+
+            features = [self.item_features[item_id] for item_id in tokens]
+
+            return (
+                torch.LongTensor(tokens),
+                label,
+                torch.LongTensor(features),
+            )
+        elif self.mode == "inference":
+            pass
+
+    @property
+    def data_schema(self):
+        return {
+            "n_items": self.n_items,
+            "item_features": self.item_pd_schema,
+            "min_length": self.min_length,
+        }
