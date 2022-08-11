@@ -37,7 +37,6 @@ class Movielens_1M(BaseDataset):
         z = zipfile.ZipFile(io.BytesIO(r.content))
         z.extractall(self.src_path)
 
-    # not happy with current results but can work it out later
     def load(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """ """
         self.dataset_path = os.path.join(self.src_path, "ml-1m")

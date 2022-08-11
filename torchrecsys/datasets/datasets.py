@@ -278,7 +278,7 @@ class SparseInteractionsDataset(torch.utils.data.Dataset):
     pass
 
 
-class NetflixTest(torch.utils.data.Dataset):
+class SequenceDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         sequences: pd.DataFrame,
@@ -287,6 +287,7 @@ class NetflixTest(torch.utils.data.Dataset):
         sequence_id: str = "sequence",
         item_id: str = "item_id",
         mode: str = "train",
+        max_length: int = 20,
         random_seq_start: bool = False,
         min_length: int = 1,
     ):
@@ -350,4 +351,5 @@ class NetflixTest(torch.utils.data.Dataset):
             "n_items": self.n_items,
             "item_features": self.item_pd_schema,
             "min_length": self.min_length,
+            "max_length": self.max_length,
         }

@@ -15,3 +15,10 @@ Sequence: gru4rec, bert4rec, bst, STAMP
 
 # Testing
 To run the library test run `pytest` from the main directory
+
+# Developing
+If you want to develop on top of the torchrecsys library you can install it in editable mode:
+```
+cd {torchrecsys folder}
+python -m pip install -e .
+```
