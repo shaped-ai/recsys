@@ -93,7 +93,7 @@ class Bert4Rec(pl.LightningModule):
         x = self.embedding(sequence)
 
         items = self.encode_item(items)
-        x = torch.cat([x, items], dim=2) if items else x
+        x = torch.cat([x, items], dim=2) if items is not None else x
         # running over multiple transformer blocks
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
