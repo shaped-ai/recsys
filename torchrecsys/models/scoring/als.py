@@ -53,7 +53,7 @@ class ALS(BaseModel):
 
         self.lr_rate = lr_rate
 
-    def forward(self, interactions, context, users, items):
+    def forward(self, interactions, users, items):
 
         user = self.user_embedding(interactions[:, 0].long())
         item = self.item_embedding(interactions[:, 1].long())

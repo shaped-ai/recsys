@@ -74,7 +74,7 @@ class DeepRetriever(BaseModel):
         return similarity
         # TODO more funcs
 
-    def forward(self, interactions, context, users_features, items_features):
+    def forward(self, interactions, users_features, items_features):
         user = interactions[:, 0].long()
         item = interactions[:, 1].long()
 
@@ -113,9 +113,9 @@ class DeepRetriever(BaseModel):
         return r
 
     def training_step(self, batch):
-        interactions, context, users, items = batch
+        interactions, users, items = batch
 
-        yhat = self(interactions.long(), context, users, items).float()
+        yhat = self(interactions.long(), users, items).float()
         ytrue = batch[0][:, 2].float()
 
         loss = self.criterion(yhat, ytrue)

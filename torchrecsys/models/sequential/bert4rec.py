@@ -1,12 +1,12 @@
-import pytorch_lightning as pl
 import torch
 from torch import nn
 
+from torchrecsys.models import BaseModel
 from torchrecsys.models.sequential.bert_utils import BERTEmbedding, TransformerBlock
 from torchrecsys.models.utils import schema_to_featureModuleList
 
 
-class Bert4Rec(pl.LightningModule):
+class Bert4Rec(BaseModel):
     """
     Bert4Rec implementation wrapping pytorch lightning module.
     """
@@ -121,8 +121,6 @@ class Bert4Rec(pl.LightningModule):
         loss = self.criterion(logits, labels)
 
         if self.training_metrics:
-            # training metrics slow down training! Use only for debugging, no
-            # production.
             logits = logits.softmax(1)
 
             acc = self.acc(logits, labels)

@@ -20,11 +20,10 @@ def test_deepretriever(dummy_interaction_dataset):
     trainer.fit(model, dataloader)
 
     pair = torch.tensor([[1, 2]])
-    context = torch.tensor([])
     user = torch.tensor([[0, 1, 0, 1]])
     item = torch.tensor([[0, 0]])
 
-    model(pair, context, user, item)
+    model(pair, user, item)
 
 
 def test_ncf(dummy_interaction_dataset):
@@ -34,11 +33,10 @@ def test_ncf(dummy_interaction_dataset):
     trainer.fit(model, dataloader)
 
     pair = torch.tensor([[1, 2]])
-    context = torch.tensor([])
     user = torch.tensor([[0, 1, 0, 1]])
     item = torch.tensor([[0, 0]])
 
-    model(pair, context, user, item)
+    model(pair, user, item)
 
 
 def test_als(dummy_interaction_dataset):
@@ -48,11 +46,10 @@ def test_als(dummy_interaction_dataset):
     trainer.fit(model, dataloader)
 
     pair = torch.tensor([[1, 2]])
-    context = torch.tensor([])
     user = torch.tensor([[0, 1, 0, 1]])
     item = torch.tensor([[0, 0]])
 
-    model(pair, context, user, item)
+    model(pair, user, item)
 
 
 def test_bert4rec(dummy_seq2seq_dataset):

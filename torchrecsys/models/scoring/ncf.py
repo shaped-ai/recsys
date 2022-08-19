@@ -62,7 +62,7 @@ class NCF(BaseModel):
         # Save hyperparameters for logging
         self.save_hyperparameters()
 
-    def forward(self, interactions, context, users, items):
+    def forward(self, interactions, users, items):
 
         user = self.user_embedding(interactions[:, 0])
         item = self.item_embedding(interactions[:, 1])
@@ -70,8 +70,16 @@ class NCF(BaseModel):
         user_features = self.encode_user(users)
         item_features = self.encode_item(items)
 
-        user = torch.cat([user, user_features], dim=1)
-        item = torch.cat([item, item_features], dim=1)
+        user = (
+            torch.cat([user, user_features], dim=1)
+            if user_features is not None
+            else user
+        )
+        item = (
+            torch.cat([item, item_features], dim=1)
+            if item_features is not None
+            else item
+        )
 
         mlp_output = self.mlp(torch.cat([user, item], dim=1))
         gmf_output = user * item
@@ -80,20 +88,20 @@ class NCF(BaseModel):
 
         return x
 
-    def predict(self, pair, context_features, user_features, item_features):
+    def predict(self, pair, user_features, item_features):
         pair = torch.tensor([pair])
 
         user_features = torch.tensor([user_features])
         item_features = torch.tensor([item_features])
 
-        return self(pair, context_features, user_features, item_features)
+        return self(pair, user_features, item_features)
 
     def encode_user(self, user):
         r = []
         for _idx, feature in enumerate(self.user_features):
             feature_representation = feature(user[:, feature.idx])
             r.append(feature_representation)
-        r = torch.cat(r, dim=1)  # Concatenate all features
+        r = torch.cat(r, dim=1) if r else None  # Concatenate all features
         return r
 
     def encode_item(self, item):
@@ -101,12 +109,12 @@ class NCF(BaseModel):
         for _idx, feature in enumerate(self.item_features):
             feature_representation = feature(item[:, feature.idx])
             r.append(feature_representation)
-        r = torch.cat(r, dim=1)  # Concatenate all features
+        r = torch.cat(r, dim=1) if r else None  # Concatenate all features
         return r
 
     def training_step(self, batch):
-        interactions, context, users, items = batch
-        yhat = self(interactions.long(), context, users, items).float()
+        interactions, users, items = batch
+        yhat = self(interactions.long(), users, items).float()
         yhat = torch.squeeze(yhat)
 
         ytrue = batch[0][:, 2].float()

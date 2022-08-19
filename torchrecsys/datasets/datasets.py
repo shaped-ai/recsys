@@ -28,11 +28,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
         # Call assert subfunction to chekc user is first, item second and interaction third
         # Assert in both user and item dfs too
 
-        self.interactions = interactions[interactions.columns[:3]]
-
-        # Infer context dataframe from interactions dataframe and user/item
-        # ids.
-        self.context_features = interactions[interactions.columns[3:]]
+        self.interactions = interactions[[user_id, item_id, interaction_id]]
 
         self.user_features = dict(
             zip(
@@ -57,7 +53,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
         self.n_items = item_features[self.item_id].max() + 1
 
         self.interactions_pd_schema = dataframe_schema(self.interactions)
-        self.context_pd_schema = dataframe_schema(self.context_features)
         self.user_pd_schema = dataframe_schema(user_features.drop(self.user_id, axis=1))
         self.item_pd_schema = dataframe_schema(item_features.drop(self.item_id, axis=1))
 
@@ -67,7 +62,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
             self.target_type = "continuous"
 
         self.interactions = interactions.values
-        self.context_features = self.context_features.values
         self.sample_negatives = sample_negatives
         if self.sample_negatives > 0:
             self.unique_items = item_features[self.item_id].unique()
@@ -90,14 +84,11 @@ class InteractionsDataset(torch.utils.data.Dataset):
                 item = self._sample_negative()
                 target = 0
 
-        context_features = self.context_features[idx]
-
         user_features = self.user_features[user]
         item_features = self.item_features[item]
 
         return (
             np.array([user, item, target]),
-            context_features,
             user_features,
             item_features,
         )
@@ -109,7 +100,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
     def data_schema(self):
         return {
             "interactions": [self.n_users, self.n_items],
-            "context": self.context_pd_schema,
             "user_features": self.user_pd_schema,
             "item_features": self.item_pd_schema,
             "objetive": self.target_type,
