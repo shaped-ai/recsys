@@ -1,4 +1,3 @@
-from .als import ALS
 from .ncf import NCF
 
-__all__ = ["NCF", "ALS"]
+__all__ = ["NCF"]

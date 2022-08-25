@@ -12,31 +12,17 @@ class FeatureLayer(torch.nn.Module):
         return self.layer(x)
 
 
-class CategoricalLayer(torch.nn.Module):
+class CategoricalLayer(FeatureLayer):
     def __init__(
         self, name: str, n_unique_values: int, dimensions: int, idx: int
     ) -> None:
-        super().__init__()
-        self.name = name
-        self.layer = torch.nn.Embedding(
+        layer = torch.nn.Embedding(
             num_embeddings=n_unique_values + 1, embedding_dim=dimensions
         )
-        self.idx = idx
-
-    def forward(self, x):
-        return self.layer(x)
-
-    @property
-    def weight(self):
-        return self.layer.weight
+        super().__init__(name=name, layer=layer, idx=idx)
 
 
-class NumericalLayer(torch.nn.Module):
+class NumericalLayer(FeatureLayer):
     def __init__(self, name: str, idx: int) -> None:
-        super().__init__()
-        self.name = name
-        self.layer = lambda x: torch.unsqueeze(x, dim=1)
-        self.idx = idx
-
-    def forward(self, x):
-        return self.layer(x)
+        layer = lambda x: torch.unsqueeze(x, dim=1)
+        super().__init__(name=name, layer=layer, idx=idx)

@@ -1,3 +1,3 @@
-from .dr import DeepRetriever
+from .deep_retriever import DeepRetriever
 
 __all__ = ["DeepRetriever"]
