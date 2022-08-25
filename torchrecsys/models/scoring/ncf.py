@@ -4,10 +4,11 @@ import torch
 from torch import nn
 
 from torchrecsys.models.base import BaseModel
+from torchrecsys.models.trainers import PytorchLightningLiteTrainer
 from torchrecsys.models.utils import schema_to_featureModuleList
 
 
-class NCF(BaseModel):
+class NCF(nn.Module, BaseModel):
     def __init__(
         self,
         data_schema,
@@ -15,6 +16,7 @@ class NCF(BaseModel):
         embedding_size: int = 64,
         feature_embedding_size: int = 8,
         mlp_layers: List[int] = [512, 256],  # NOQA B006
+        accelerator="cpu",
     ):
         super().__init__()
         interactions_schema = data_schema["interactions"]
@@ -59,8 +61,8 @@ class NCF(BaseModel):
 
         self.lr_rate = lr_rate
 
-        # Save hyperparameters for logging
-        self.save_hyperparameters()
+        # Trainer
+        self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
 
     def forward(self, interactions, users, items):
 
@@ -120,23 +122,14 @@ class NCF(BaseModel):
         ytrue = batch[0][:, 2].float()
 
         loss = self.criterion(yhat, ytrue)
-
-        self.log("train/step_loss", loss, on_step=True, on_epoch=False, prog_bar=False)
-
         return loss
 
     def validation_step(self, batch):
         yhat = self(*batch).float()
         ytrue = batch[0][:, 2].float()
         loss = self.criterion(yhat, ytrue)
-
-        self.log(
-            "validation/step_loss", loss, on_step=True, on_epoch=False, prog_bar=False
-        )
-
         return loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), self.lr_rate)
-
         return optimizer

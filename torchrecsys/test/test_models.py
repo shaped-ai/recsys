@@ -1,9 +1,7 @@
 import torch
-from pytorch_lightning import Trainer
 
 from torchrecsys.models.retrieval import DeepRetriever
-from torchrecsys.models.scoring import ALS, NCF
-from torchrecsys.models.sequential import Bert4Rec
+from torchrecsys.models.scoring import NCF
 from torchrecsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
@@ -14,10 +12,8 @@ from torchrecsys.test.fixtures import (  # NOQA
 
 
 def test_deepretriever(dummy_interaction_dataset):
-    dataloader = torch.utils.data.DataLoader(dummy_interaction_dataset, batch_size=2)
     model = DeepRetriever(dummy_interaction_dataset.data_schema)
-    trainer = Trainer(max_epochs=1)
-    trainer.fit(model, dataloader)
+    model.fit(dataset=dummy_interaction_dataset)
 
     pair = torch.tensor([[1, 2]])
     user = torch.tensor([[0, 1, 0, 1]])
@@ -27,42 +23,11 @@ def test_deepretriever(dummy_interaction_dataset):
 
 
 def test_ncf(dummy_interaction_dataset):
-    dataloader = torch.utils.data.DataLoader(dummy_interaction_dataset, batch_size=2)
     model = NCF(dummy_interaction_dataset.data_schema)
-    trainer = Trainer(max_epochs=1)
-    trainer.fit(model, dataloader)
+    model.fit(dataset=dummy_interaction_dataset)
 
     pair = torch.tensor([[1, 2]])
     user = torch.tensor([[0, 1, 0, 1]])
     item = torch.tensor([[0, 0]])
 
     model(pair, user, item)
-
-
-def test_als(dummy_interaction_dataset):
-    dataloader = torch.utils.data.DataLoader(dummy_interaction_dataset, batch_size=2)
-    model = ALS(dummy_interaction_dataset.data_schema)
-    trainer = Trainer(max_epochs=1)
-    trainer.fit(model, dataloader)
-
-    pair = torch.tensor([[1, 2]])
-    user = torch.tensor([[0, 1, 0, 1]])
-    item = torch.tensor([[0, 0]])
-
-    model(pair, user, item)
-
-
-def test_bert4rec(dummy_seq2seq_dataset):
-    dataloader = torch.utils.data.DataLoader(dummy_seq2seq_dataset, batch_size=2)
-    model = Bert4Rec(dummy_seq2seq_dataset.data_schema)
-    trainer = Trainer(max_epochs=1)
-    trainer.fit(model, dataloader)
-
-    sequence = torch.zeros(
-        2, dummy_seq2seq_dataset.data_schema["max_length"], dtype=torch.long
-    )
-    item = torch.zeros(
-        2, dummy_seq2seq_dataset.data_schema["max_length"], 2, dtype=torch.long
-    )
-
-    model(sequence, item)

@@ -4,10 +4,11 @@ import torch
 from torch import nn
 
 from torchrecsys.models.base import BaseModel
+from torchrecsys.models.trainers import PytorchLightningLiteTrainer
 from torchrecsys.models.utils import schema_to_featureModuleList
 
 
-class DeepRetriever(BaseModel):
+class DeepRetriever(nn.Module, BaseModel):
     def __init__(
         self,
         data_schema,
@@ -16,6 +17,7 @@ class DeepRetriever(BaseModel):
         feature_embedding_size: int = 8,
         mlp_layers: List[int] = [512, 256],  # NOQA B006
         similarity_function: str = "dot",
+        accelerator: str = "cpu",
     ):
         super().__init__()
 
@@ -60,10 +62,17 @@ class DeepRetriever(BaseModel):
                 for i in range(0, len(mlp_layers) - 1)
             ]
         )
-        self.criterion = torch.nn.BCEWithLogitsLoss()  # Only implicit feedback
+        self.criterion = (
+            torch.nn.BCEWithLogitsLoss()
+            if data_schema["objetive"] == "binary"
+            else torch.nn.MSELoss()
+        )  # Only implicit feedback
 
         self.lr_rate = lr_rate
         self.similarity_function = similarity_function
+
+        # Trainer
+        self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
 
     def sim_function(self, user_factor, item_factor):
         if self.similarity_function == "dot":
@@ -112,6 +121,9 @@ class DeepRetriever(BaseModel):
         r = torch.cat(r, dim=1)
         return r
 
+    def generate_item_matrix(self, items):
+        return self.item_embedding(items)
+
     def training_step(self, batch):
         interactions, users, items = batch
 
@@ -120,18 +132,12 @@ class DeepRetriever(BaseModel):
 
         loss = self.criterion(yhat, ytrue)
 
-        self.log("train/step_loss", loss, on_step=True, on_epoch=False, prog_bar=False)
-
         return loss
 
     def validation_step(self, batch):
         yhat = self(*batch).float()
         ytrue = batch[0][:, 2].float()
         loss = self.criterion(yhat, ytrue)
-
-        self.log(
-            "validation/step_loss", loss, on_step=True, on_epoch=False, prog_bar=False
-        )
 
         return loss
 
@@ -142,24 +148,44 @@ class DeepRetriever(BaseModel):
 
     def generate_item_representations(self, interactions_dataset):
         # TODO MAKE this run under pl
-        torch.set_grad_enabled(False)
-        self.eval()
-        item_feature_dict = interactions_dataset.item_features
+        with torch.no_grad():
+            torch.set_grad_enabled(False)
+            self.eval()
+            item_feature_dict = interactions_dataset.item_features
 
-        # TODO OPTIMIZE THIS LOOP
-        items = []
-        items_features = []
-        for item in item_feature_dict.keys():
-            items.append(item)
-            items_features.append(item_feature_dict[item])
-        items = torch.tensor(items)
-        items_features = torch.tensor(items_features)
+            # TODO OPTIMIZE THIS LOOP
+            items = []
+            items_features = []
+            for item in item_feature_dict.keys():
+                items.append(item)
+                items_features.append(item_feature_dict[item])
+            items = torch.tensor(items)
+            items_features = torch.tensor(items_features)
 
-        item_embeddings = self.item_embedding(items)
-        item_features = self.encode_item(items_features)
+            item_embeddings = self.item_embedding(items)
+            item_features = self.encode_item(items_features)
 
-        item_embeddings = torch.cat([item_embeddings, item_features], dim=1)
-        item_embeddings = self.item_mlp(item_embeddings)
+            item_embeddings = torch.cat([item_embeddings, item_features], dim=1)
+            item_embeddings = self.item_mlp(item_embeddings)
+        return item_feature_dict.keys(), item_embeddings
 
-        torch.set_grad_enabled(True)
-        return item_embeddings
+    def generate_user_representations(self, interactions_dataset):
+        # TODO MAKE this run under pl
+        with torch.no_grad():
+            user_feature_dict = interactions_dataset.user_features
+
+            # TODO OPTIMIZE THIS LOOP
+            users = []
+            users_features = []
+            for user in user_feature_dict.keys():
+                users.append(user)
+                users_features.append(user_feature_dict[user])
+            users = torch.tensor(users)
+            users_features = torch.tensor(users_features)
+
+            user_embeddings = self.user_embedding(users)
+            user_features = self.encode_user(users_features)
+
+            user_embeddings = torch.cat([user_embeddings, user_features], dim=1)
+            user_embeddings = self.user_mlp(user_embeddings)
+        return user_feature_dict.keys(), user_embeddings

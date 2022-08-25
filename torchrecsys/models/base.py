@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 
-import pytorch_lightning as pl
 
-
-class BaseModel(pl.LightningModule, ABC):
+class BaseModel(ABC):
     @abstractmethod
     def forward(self, x):
         raise NotImplementedError("`forward` method must be implemented by the user")
@@ -27,6 +25,13 @@ class BaseModel(pl.LightningModule, ABC):
         self,
     ):
         pass
+
+    @property
+    def trainer(self):
+        return self._trainer
+
+    def fit(self, **kwargs):
+        self.trainer.fit(model=self, **kwargs)
 
 
 #     @abstractmethod
