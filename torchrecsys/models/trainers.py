@@ -1,6 +1,6 @@
 from pytorch_lightning.lite import LightningLite
-from tqdm import tqdm
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 class PytorchLightningLiteTrainer(LightningLite):
@@ -22,4 +22,6 @@ class PytorchLightningLiteTrainer(LightningLite):
                 self.backward(loss)
                 optimizer.step()
                 if idx % 10 == 0:
-                    pbar.set_description(f"Epoch: {epoch}/{num_epochs}, Loss: {loss:.2f}")
+                    pbar.set_description(
+                        f"Epoch: {epoch}/{num_epochs}, Loss: {loss:.2f}"
+                    )

@@ -66,7 +66,7 @@ class DeepRetriever(nn.Module, BaseModel):
             torch.nn.BCEWithLogitsLoss()
             if data_schema["objetive"] == "binary"
             else torch.nn.MSELoss()
-        ) # Only implicit feedback
+        )  # Only implicit feedback
 
         self.lr_rate = lr_rate
         self.similarity_function = similarity_function
@@ -123,6 +123,7 @@ class DeepRetriever(nn.Module, BaseModel):
 
     def generate_item_matrix(self, items):
         return self.item_embedding(items)
+
     def training_step(self, batch):
         interactions, users, items = batch
 
