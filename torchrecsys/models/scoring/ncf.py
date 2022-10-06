@@ -21,7 +21,6 @@ class NCF(nn.Module, BaseModel):
         super().__init__()
         interactions_schema = data_schema["interactions"]
 
-        # Ad 1 to the ids and use the latest id as default id for unseen, #TODO
         self.n_users = interactions_schema[0]
         self.n_items = interactions_schema[1]
 
@@ -65,7 +64,6 @@ class NCF(nn.Module, BaseModel):
         self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
 
     def forward(self, interactions, users, items):
-
         user = self.user_embedding(interactions[:, 0])
         item = self.item_embedding(interactions[:, 1])
 
@@ -91,11 +89,9 @@ class NCF(nn.Module, BaseModel):
         return x
 
     def predict(self, pair, user_features, item_features):
-        pair = torch.tensor([pair])
-
-        user_features = torch.tensor([user_features])
-        item_features = torch.tensor([item_features])
-
+        pair = torch.as_tensor(pair)
+        user_features = torch.as_tensor(user_features)
+        item_features = torch.as_tensor(item_features)
         return self(pair, user_features, item_features)
 
     def encode_user(self, user):
