@@ -1,7 +1,6 @@
 import torch
 
 from torchrecsys.models.retrieval import DeepRetriever
-from torchrecsys.models.scoring import NCF
 from torchrecsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
@@ -9,6 +8,7 @@ from torchrecsys.test.fixtures import (  # NOQA
     dummy_seq2seq_dataset,
     dummy_user_features,
 )
+
 
 def test_deepretriever(dummy_interaction_dataset):
     model = DeepRetriever(dummy_interaction_dataset.data_schema)
