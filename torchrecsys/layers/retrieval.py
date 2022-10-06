@@ -13,8 +13,11 @@ def retrieve_nearest_neighbors(
     # TODO DATA CHECKS, shape etc
 
     if algo == "bruteforce":
+        candidates = torch.as_tensor(candidates)
+        query = torch.as_tensor(query)
         dist = torch.norm(candidates - query, dim=1, p=None)
+        k = min(k, len(candidates))
         knn = dist.topk(k, largest=False)
-        return knn.indices
+        return knn.indices.int()
     else:
         raise NotImplementedError("Algo not implemented")

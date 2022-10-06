@@ -30,13 +30,5 @@ class BaseModel(ABC):
     def trainer(self):
         return self._trainer
 
-    def fit(self, **kwargs):
-        self.trainer.fit(model=self, **kwargs)
-
-
-#     @abstractmethod
-#     def get_n_recommendation_batch(self, query_vectors, n, params):
-#         """
-#         Recommendation for batch users in list.
-#         """
-#         pass
+    def fit(self, dataset, **kwargs):
+        self.trainer.fit(model=self, dataset=dataset, **kwargs)
