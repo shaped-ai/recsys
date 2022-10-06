@@ -13,8 +13,8 @@ def retrieve_nearest_neighbors(
     # TODO DATA CHECKS, shape etc
 
     if algo == "bruteforce":
-        candidates = torch.as_tensor(candidates)
-        query = torch.as_tensor(query)
+        candidates = torch.as_tensor(candidates, dtype=torch.float64)
+        query = torch.as_tensor(query, dtype=torch.float64)
         dist = torch.norm(candidates - query, dim=1, p=None)
         k = min(k, len(candidates))
         knn = dist.topk(k, largest=False)
