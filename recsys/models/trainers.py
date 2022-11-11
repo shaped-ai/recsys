@@ -8,7 +8,7 @@ class PytorchLightningLiteTrainer(LightningLite):
         pass
 
     def fit(self, model, dataset, num_epochs=50, batch_size=512, **kwargs):
-        dataloader = DataLoader(dataset, batch_size=2048)
+        dataloader = DataLoader(dataset, batch_size=256)
         dataloader = self.setup_dataloaders(dataloader)
         optimizer = model.configure_optimizers()
         model, optimizer = self.setup(model, optimizer)

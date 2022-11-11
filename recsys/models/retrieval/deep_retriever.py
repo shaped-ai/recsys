@@ -66,22 +66,13 @@ class DeepRetriever(nn.Module, BaseModel):
             torch.nn.BCEWithLogitsLoss()
             if data_schema["objetive"] == "binary"
             else torch.nn.MSELoss()
-        )  # Only implicit feedback
+        )
 
         self.lr_rate = lr_rate
         self.similarity_function = similarity_function
 
         # Trainer
         self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
-
-    def sim_function(self, user_factor, item_factor):
-        if self.similarity_function == "dot":
-            similarity = torch.mul(user_factor, item_factor).sum(dim=1)
-        elif self.similarity_function == "cosine":
-            similarity = torch.cosine_similarity(user_factor, item_factor, dim=1)
-
-        return similarity
-        # TODO more funcs
 
     def forward(self, interactions, users_features, items_features):
         user = interactions[:, 0].long()
@@ -101,7 +92,13 @@ class DeepRetriever(nn.Module, BaseModel):
 
         user_bias = torch.squeeze(self.user_bias(user))
         item_bias = torch.squeeze(self.item_bias(item))
-        yhat = self.sim_function(user_factor, item_factor) + user_bias + item_bias
+        yhat = (
+            compute_similarity(
+                x=user_factor, y=item_factor, mode=self.similarity_function
+            )
+            + user_bias
+            + item_bias
+        )
 
         return yhat
 
@@ -147,13 +144,11 @@ class DeepRetriever(nn.Module, BaseModel):
         return optimizer
 
     def generate_item_representations(self, interactions_dataset):
-        # TODO MAKE this run under pl
+        # TODO MAKE this run under pl and optimize loop
         with torch.no_grad():
             torch.set_grad_enabled(False)
             self.eval()
             item_feature_dict = interactions_dataset.item_features
-
-            # TODO OPTIMIZE THIS LOOP
             items = []
             items_features = []
             for item in item_feature_dict.keys():
@@ -167,14 +162,13 @@ class DeepRetriever(nn.Module, BaseModel):
 
             item_embeddings = torch.cat([item_embeddings, item_features], dim=1)
             item_embeddings = self.item_mlp(item_embeddings)
-        return item_feature_dict.keys(), item_embeddings
+
+        return torch.tensor(list(item_feature_dict.keys())), item_embeddings
 
     def generate_user_representations(self, interactions_dataset):
-        # TODO MAKE this run under pl
+        # TODO MAKE this run under pl and optimize loop.
         with torch.no_grad():
             user_feature_dict = interactions_dataset.user_features
-
-            # TODO OPTIMIZE THIS LOOP
             users = []
             users_features = []
             for user in user_feature_dict.keys():
@@ -188,4 +182,5 @@ class DeepRetriever(nn.Module, BaseModel):
 
             user_embeddings = torch.cat([user_embeddings, user_features], dim=1)
             user_embeddings = self.user_mlp(user_embeddings)
-        return user_feature_dict.keys(), user_embeddings
+
+        return torch.tensor(list(user_feature_dict.keys())), user_embeddings

@@ -17,7 +17,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
         item_id="item_id",
         interaction_id="interaction",
         sample_negatives=0,
-        target_column=None,
     ):
 
         self.user_id = user_id
@@ -43,10 +42,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
             )
         )
 
-        if target_column and sample_negatives:
-            # TODO WRITE THIS LOGIC
-            assert 1 == 0  # Error because logic wont work
-
         # Create a nice way of loading context + item features into a single
         # dataset. Generate schema that models read from and are able to create
         self.n_users = user_features[self.user_id].max() + 1
@@ -65,7 +60,6 @@ class InteractionsDataset(torch.utils.data.Dataset):
         self.sample_negatives = sample_negatives
         if self.sample_negatives > 0:
             self.unique_items = item_features[self.item_id].unique()
-        # To do add custom target column
 
     def __len__(self):
         return len(self.interactions)
@@ -73,6 +67,12 @@ class InteractionsDataset(torch.utils.data.Dataset):
     def _sample_negative(self):
         # TODO make this not sample already interacted items
         return np.random.choice(self.unique_items)
+
+    def get_user_features(self, user_ids):
+        return [self.user_features[user_id] for user_id in user_ids]
+
+    def get_item_features(self, item_ids):
+        return [self.item_features[item_id] for item_id in item_ids]
 
     def __getitem__(self, idx):
         interaction = self.interactions[idx]
