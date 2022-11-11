@@ -1,8 +1,8 @@
-from torchrecsys.datasets import InteractionsDataset
-from torchrecsys.external_datasets import Movielens_1M
-from torchrecsys.layers import retrieve_nearest_neighbors
-from torchrecsys.models.retrieval import DeepRetriever
-from torchrecsys.models.scoring import NCF
+from recsys.datasets import InteractionsDataset
+from recsys.external_datasets import Movielens_1M
+from recsys.layers import retrieve_nearest_neighbors
+from recsys.models.retrieval import DeepRetriever
+from recsys.models.scoring import NCF
 
 # Setup dataset
 data = Movielens_1M()

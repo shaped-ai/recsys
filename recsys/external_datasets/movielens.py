@@ -6,7 +6,7 @@ from typing import Tuple
 import pandas as pd
 import requests
 
-from torchrecsys.external_datasets.base import DEFAULT_ROOT_DIR, BaseDataset
+from recsys.external_datasets.base import DEFAULT_ROOT_DIR, BaseDataset
 
 # download_url
 ML_100K_URL = "http://files.grouplens.org/datasets/movielens/ml-100k.zip"

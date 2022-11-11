@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from torchrecsys.datasets.utils import dataframe_schema
+from recsys.datasets.utils import dataframe_schema
 
 
 class InteractionsDataset(torch.utils.data.Dataset):

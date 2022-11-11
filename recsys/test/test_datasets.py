@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 
-from torchrecsys.datasets import InteractionsDataset, Seq2SeqDataset
-from torchrecsys.test.fixtures import (  # NOQA
+from recsys.datasets import InteractionsDataset, Seq2SeqDataset
+from recsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
     dummy_item_features,

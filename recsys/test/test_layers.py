@@ -1,6 +1,6 @@
 import torch
 
-from torchrecsys.layers.retrieval import retrieve_nearest_neighbors
+from recsys.layers.retrieval import retrieve_nearest_neighbors
 
 
 def test_retrieve_nearest_neighbors():

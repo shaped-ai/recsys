@@ -3,10 +3,10 @@ from typing import List
 import torch
 from torch import nn
 
-from torchrecsys.layers.utils import compute_similarity
-from torchrecsys.models.base import BaseModel
-from torchrecsys.models.trainers import PytorchLightningLiteTrainer
-from torchrecsys.models.utils import schema_to_featureModuleList
+from recsys.layers.utils import compute_similarity
+from recsys.models.base import BaseModel
+from recsys.models.trainers import PytorchLightningLiteTrainer
+from recsys.models.utils import schema_to_featureModuleList
 
 
 class DeepRetriever(nn.Module, BaseModel):
