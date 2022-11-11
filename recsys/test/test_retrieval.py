@@ -1,7 +1,6 @@
 import torch
 
 from recsys.models.retrieval import DeepRetriever
-from recsys.models.scoring import NCF
 from recsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
