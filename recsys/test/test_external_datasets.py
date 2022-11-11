@@ -1,4 +1,4 @@
-from torchrecsys.external_datasets import Movielens_1M
+from recsys.external_datasets import Movielens_1M
 
 
 def test_movielens_1m():

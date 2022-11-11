@@ -2,8 +2,8 @@ from typing import List, Tuple
 
 import torch
 
-from torchrecsys.datasets.utils import feature
-from torchrecsys.layers import CategoricalLayer, NumericalLayer
+from recsys.datasets.utils import feature
+from recsys.layers import CategoricalLayer, NumericalLayer
 
 
 def schema_to_featureModuleList(

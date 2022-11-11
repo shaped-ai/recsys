@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from torchrecsys.datasets import InteractionsDataset, Seq2SeqDataset
+from recsys.datasets import InteractionsDataset, Seq2SeqDataset
 
 
 @pytest.fixture

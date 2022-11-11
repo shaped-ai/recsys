@@ -33,8 +33,8 @@ except BaseException:
 
 setup_info = dict(
     # Metadata
-    name="torchrecsys",
-    version=find_version("torchrecsys", "__init__.py"),
+    name="recsys",
+    version=find_version("recsys", "__init__.py"),
     author="Jaime Ferrando Huertas",
     author_email="fhjaime96@gmail.com",
     description="Lightweight pytorch library to build recommender systems.",

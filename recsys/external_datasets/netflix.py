@@ -6,7 +6,7 @@ from typing import Tuple
 import pandas as pd
 import requests
 
-from torchrecsys.external_datasets.base import DEFAULT_ROOT_DIR, BaseDataset
+from recsys.external_datasets.base import DEFAULT_ROOT_DIR, BaseDataset
 
 # Download links
 NETFLIX_DRIVE_URL = "https://github.com/jiwidi/netflix_price/raw/master/netflix.zip"

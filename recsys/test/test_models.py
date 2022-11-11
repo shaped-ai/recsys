@@ -1,8 +1,8 @@
 import torch
 
-from torchrecsys.models.retrieval import DeepRetriever
-from torchrecsys.models.scoring import NCF
-from torchrecsys.test.fixtures import (  # NOQA
+from recsys.models.retrieval import DeepRetriever
+from recsys.models.scoring import NCF
+from recsys.test.fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
     dummy_item_features,

@@ -33,5 +33,5 @@ repos:
   #   hooks:
   #    -  id: mypy
   #       name: mypy (python)
-  #       files: torchrecsys/
+  #       files: recsys/
   #       additional_dependencies: [pytest==6.2.4]
