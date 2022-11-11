@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.0.1a"
 
 
 from pytorch_lightning import Trainer
