@@ -6,6 +6,7 @@ from torch import nn
 from recsys.models.base import BaseModel
 from recsys.models.trainers import PytorchLightningLiteTrainer
 from recsys.models.utils import schema_to_featureModuleList
+from recsys.layers.utils import compute_similarity
 
 
 class DeepRetriever(nn.Module, BaseModel):
