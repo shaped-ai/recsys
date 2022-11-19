@@ -69,10 +69,10 @@ class InteractionsDataset(torch.utils.data.Dataset):
         return np.random.choice(self.unique_items)
 
     def get_user_features(self, user_ids):
-        return [self.user_features[user_id] for user_id in user_ids]
+        return torch.tensor([self.user_features[user_id] for user_id in user_ids])
 
     def get_item_features(self, item_ids):
-        return [self.item_features[item_id] for item_id in item_ids]
+        return torch.tensor([self.item_features[item_id] for item_id in item_ids])
 
     def __getitem__(self, idx):
         interaction = self.interactions[idx]

@@ -88,11 +88,21 @@ class NCF(nn.Module, BaseModel):
 
         return x
 
-    def predict(self, pair, user_features, item_features):
+    def score(self, pair, user_features, item_features):
         pair = torch.as_tensor(pair)
         user_features = torch.as_tensor(user_features)
         item_features = torch.as_tensor(item_features)
         return self(pair, user_features, item_features)
+
+    def batch_score(self, users, items, user_features, item_features):
+        r = []
+        for i, user in enumerate(users):
+            # Create pairs of the user with all items
+            pairs = torch.tensor([[user, item] for item in items])
+            user_scores = self.score(pairs, user_features[[i for _ in range(len(pairs))]], item_features)
+            r.append(user_scores)
+
+        return torch.stack(r)
 
     def encode_user(self, user):
         r = []
