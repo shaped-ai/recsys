@@ -85,6 +85,7 @@ class NCF(nn.Module, BaseModel):
         gmf_output = user * item
 
         x = self.final_linear(torch.cat([gmf_output, mlp_output], dim=1))
+        x = torch.squeeze(x)
 
         return x
 
@@ -94,13 +95,23 @@ class NCF(nn.Module, BaseModel):
         item_features = torch.as_tensor(item_features)
         return self(pair, user_features, item_features)
 
-    def batch_score(self, users, items, user_features, item_features):
+    def batch_score(self, users, items, user_features, item_features, batch_size=256):
         r = []
         for i, user in enumerate(users):
+            single_user_scores = []
             # Create pairs of the user with all items
+            single_user_features = user_features[i].repeat(len(items), 1)
             pairs = torch.tensor([[user, item] for item in items])
-            user_scores = self.score(pairs, user_features[[i for _ in range(len(pairs))]], item_features)
-            r.append(user_scores)
+            for ndx in range(0, len(pairs), batch_size):
+                single_user_scores.append(
+                    self.score(
+                        pairs[ndx : ndx + batch_size],
+                        single_user_features[ndx : ndx + batch_size],
+                        item_features[ndx : ndx + batch_size],
+                    )
+                )
+
+            r.append(torch.cat(single_user_scores))
 
         return torch.stack(r)
 

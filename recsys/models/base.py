@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class BaseModel(ABC):
+    # PL Related methods
     @abstractmethod
     def forward(self, x):
         raise NotImplementedError("`forward` method must be implemented by the user")
@@ -21,14 +22,13 @@ class BaseModel(ABC):
             "`configure_optimizers` method must be implemented by the user"
         )
 
-    def compile(
-        self,
-    ):
-        pass
-
-    @property
-    def trainer(self):
-        return self._trainer
-
     def fit(self, dataset, **kwargs):
-        self.trainer.fit(model=self, dataset=dataset, **kwargs)
+        self._trainer.fit(model=self, dataset=dataset, **kwargs)
+
+    def batch_score(self, args):
+        return NotImplementedError("`batch_score` method must be implemented by the user")
+    def encode_user(self, user):
+        raise NotImplementedError("`encode_user` method must be implemented by the user")
+
+    def encode_item(self, item):
+        raise NotImplementedError("`encode_item` method must be implemented by the user")

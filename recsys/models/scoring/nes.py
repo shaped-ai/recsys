@@ -9,27 +9,28 @@ from recsys.models.trainers import PytorchLightningLiteTrainer
 from recsys.models.utils import schema_to_featureModuleList
 
 
-class DeepRetriever(nn.Module, BaseModel):
+class NES(nn.Module, BaseModel):
+    """
+    This class implements the Neural Embedding Similarity (NES) model.
+    """
     def __init__(
         self,
         data_schema,
         lr_rate: float = 0.01,
         embedding_size: int = 64,
         feature_embedding_size: int = 8,
-        mlp_layers: List[int] = [512, 256],  # NOQA B006
+        mlp_layers: List[int] = None,  # NOQA B006
         similarity_function: str = "dot",
         accelerator: str = "cpu",
     ):
         super().__init__()
 
-        # TODO DATA SCHEMA CHECKS
         interactions_schema = data_schema["interactions"]
 
         self.n_users = interactions_schema[0]
         self.n_items = interactions_schema[1]
 
         # User features encoding
-
         self.user_features, self.user_feature_dimension = schema_to_featureModuleList(
             data_schema["user_features"], feature_embedding_size
         )
@@ -44,25 +45,33 @@ class DeepRetriever(nn.Module, BaseModel):
 
         self.user_bias = nn.Embedding(self.n_users + 1, 1)
         self.item_bias = nn.Embedding(self.n_items + 1, 1)
+
+
+        total_user_dimension = embedding_size + self.user_feature_dimension
+        total_item_dimension = embedding_size + self.item_feature_dimension
+
+        dominant_embedding_size = max(total_user_dimension, total_item_dimension)
+        mlp_layers = [dominant_embedding_size] if mlp_layers is None else mlp_layers
+
         # User mlp
-        mlp_layers = [self.user_feature_dimension + embedding_size] + mlp_layers
-        # TODO Add activation functions
+        user_mlp_layers = [self.user_feature_dimension + embedding_size] + mlp_layers
+
         self.user_mlp = torch.nn.Sequential(
             *[
-                nn.Linear(mlp_layers[i], mlp_layers[i + 1])
-                for i in range(0, len(mlp_layers) - 1)
+                nn.Linear(user_mlp_layers[i], user_mlp_layers[i + 1])
+                for i in range(0, len(user_mlp_layers) - 1)
             ]
         )
 
-        # Item mlp
-        mlp_layers = [self.item_feature_dimension + embedding_size] + mlp_layers
-        # TODO Add activation functions
+        item_mlp_layers = [self.item_feature_dimension + embedding_size] + mlp_layers
+
         self.item_mlp = torch.nn.Sequential(
             *[
-                nn.Linear(mlp_layers[i], mlp_layers[i + 1])
-                for i in range(0, len(mlp_layers) - 1)
+                nn.Linear(item_mlp_layers[i], item_mlp_layers[i + 1])
+                for i in range(0, len(item_mlp_layers) - 1)
             ]
         )
+
         self.criterion = (
             torch.nn.BCEWithLogitsLoss()
             if data_schema["objetive"] == "binary"
@@ -118,6 +127,32 @@ class DeepRetriever(nn.Module, BaseModel):
             r.append(feature_embedding)
         r = torch.cat(r, dim=1)
         return r
+
+    def score(self, pair, user_features, item_features):
+        pair = torch.as_tensor(pair)
+        user_features = torch.as_tensor(user_features)
+        item_features = torch.as_tensor(item_features)
+        return self(pair, user_features, item_features)
+
+    def batch_score(self, users, items, user_features, item_features, batch_size=256):
+        r = []
+        for i, user in enumerate(users):
+            single_user_scores = []
+            # Create pairs of the user with all items
+            single_user_features = user_features[i].repeat(len(items), 1)
+            pairs = torch.tensor([[user, item] for item in items])
+            for ndx in range(0, len(pairs), batch_size):
+                single_user_scores.append(
+                    self.score(
+                        pairs[ndx : ndx + batch_size],
+                        single_user_features[ndx : ndx + batch_size],
+                        item_features[ndx : ndx + batch_size],
+                    )
+                )
+
+            r.append(torch.cat(single_user_scores))
+
+        return torch.stack(r)
 
     def generate_item_matrix(self, items):
         return self.item_embedding(items)
