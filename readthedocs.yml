@@ -16,9 +16,6 @@ formats:
 python:
   version: 3.9
   install:
-    - method: pip
-      path: .
-  install:
     - requirements: docs/requirements.txt
     - method: pip
       path: .
