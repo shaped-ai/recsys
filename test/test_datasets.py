@@ -1,12 +1,14 @@
 from torch.utils.data import DataLoader
 
 from recsys.datasets import InteractionsDataset
+
 from .fixtures import (  # NOQA
     dummy_interaction_dataset,
     dummy_interactions,
     dummy_item_features,
     dummy_user_features,
 )
+
 
 def test_interactions_dataset(
     dummy_interactions, dummy_user_features, dummy_item_features
