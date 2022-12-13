@@ -6,55 +6,80 @@ from torch import nn
 from recsys.layers.utils import compute_similarity
 from recsys.models.base import BaseModel
 from recsys.models.trainers import PytorchLightningLiteTrainer
-from recsys.models.utils import schema_to_featureModuleList
+from recsys.models.utils import align_item_user_dimensions, schema_to_featureModuleList
 
 
 class NES(nn.Module, BaseModel):
     """
     This class implements the Neural Embedding Similarity (NES) model.
     """
+
     def __init__(
         self,
         data_schema,
         lr_rate: float = 0.01,
-        embedding_size: int = 64,
+        id_embedding_size: int = 64,
         feature_embedding_size: int = 8,
-        mlp_layers: List[int] = None,  # NOQA B006
+        mlp_layers: List[int] = None,
         similarity_function: str = "dot",
         accelerator: str = "cpu",
     ):
         super().__init__()
 
-        interactions_schema = data_schema["interactions"]
-
-        self.n_users = interactions_schema[0]
-        self.n_items = interactions_schema[1]
-
+        user_id_dimension, item_id_dimension = align_item_user_dimensions(
+            data_schema["user_features"],
+            data_schema["item_features"],
+            feature_embedding_size,
+            id_embedding_size,
+        )
         # User features encoding
+        feature_embedding_sizes = {
+            data_schema["user_id"]: user_id_dimension,
+        }
         self.user_features, self.user_feature_dimension = schema_to_featureModuleList(
-            data_schema["user_features"], feature_embedding_size
+            data_schema["user_features"],
+            feature_embedding_size,
+            feature_embedding_sizes,
         )
 
         # Item features encoding
+        feature_embedding_sizes = {
+            data_schema["item_id"]: item_id_dimension,
+        }
         self.item_features, self.item_feature_dimension = schema_to_featureModuleList(
-            data_schema["item_features"], feature_embedding_size
+            data_schema["item_features"],
+            feature_embedding_size,
+            feature_embedding_sizes,
         )
 
-        self.user_embedding = nn.Embedding(self.n_users + 1, embedding_size)
-        self.item_embedding = nn.Embedding(self.n_items + 1, embedding_size)
+        n_users = data_schema["user_features"][
+            data_schema["user_id"]
+        ].unique_value_count
+        n_items = data_schema["item_features"][
+            data_schema["item_id"]
+        ].unique_value_count
 
-        self.user_bias = nn.Embedding(self.n_users + 1, 1)
-        self.item_bias = nn.Embedding(self.n_items + 1, 1)
+        # Find user_feature idx - TODO: IMPROVE
+        self._user_id_feature_idx = [
+            i
+            for i, f in enumerate(self.user_features)
+            if f.name == data_schema["user_id"]
+        ][0]
+        self._item_id_feature_idx = [
+            i
+            for i, f in enumerate(self.item_features)
+            if f.name == data_schema["item_id"]
+        ][0]
 
-
-        total_user_dimension = embedding_size + self.user_feature_dimension
-        total_item_dimension = embedding_size + self.item_feature_dimension
-
-        dominant_embedding_size = max(total_user_dimension, total_item_dimension)
-        mlp_layers = [dominant_embedding_size] if mlp_layers is None else mlp_layers
+        self.user_bias = nn.Embedding(n_users + 1, 1)
+        self.item_bias = nn.Embedding(n_items + 1, 1)
 
         # User mlp
-        user_mlp_layers = [self.user_feature_dimension + embedding_size] + mlp_layers
+        user_mlp_layers = (
+            [user_id_dimension]
+            if mlp_layers is None
+            else [user_id_dimension] + mlp_layers
+        )
 
         self.user_mlp = torch.nn.Sequential(
             *[
@@ -63,7 +88,11 @@ class NES(nn.Module, BaseModel):
             ]
         )
 
-        item_mlp_layers = [self.item_feature_dimension + embedding_size] + mlp_layers
+        item_mlp_layers = (
+            [item_id_dimension]
+            if mlp_layers is None
+            else [item_id_dimension] + mlp_layers
+        )
 
         self.item_mlp = torch.nn.Sequential(
             *[
@@ -84,34 +113,6 @@ class NES(nn.Module, BaseModel):
         # Trainer
         self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
 
-    def forward(self, interactions, users_features, items_features):
-        user = interactions[:, 0].long()
-        item = interactions[:, 1].long()
-
-        user_factor = self.user_embedding(user)
-        item_factor = self.item_embedding(item)
-
-        user_features = self.encode_user(users_features)
-        item_features = self.encode_item(items_features)
-
-        user_factor = torch.cat([user_factor, user_features], dim=1)
-        item_factor = torch.cat([item_factor, item_features], dim=1)
-
-        user_factor = self.user_mlp(user_factor)
-        item_factor = self.item_mlp(item_factor)
-
-        user_bias = torch.squeeze(self.user_bias(user))
-        item_bias = torch.squeeze(self.item_bias(item))
-        yhat = (
-            compute_similarity(
-                x=user_factor, y=item_factor, mode=self.similarity_function
-            )
-            + user_bias
-            + item_bias
-        )
-
-        return yhat
-
     def encode_user(self, user):
         r = []
         for _idx, feature in enumerate(self.user_features):
@@ -128,25 +129,51 @@ class NES(nn.Module, BaseModel):
         r = torch.cat(r, dim=1)
         return r
 
-    def score(self, pair, user_features, item_features):
-        pair = torch.as_tensor(pair)
-        user_features = torch.as_tensor(user_features)
-        item_features = torch.as_tensor(item_features)
-        return self(pair, user_features, item_features)
+    def forward(self, users_features, items_features):
+        user_vector = self.encode_user(users_features)
+        item_vector = self.encode_item(items_features)
 
-    def batch_score(self, users, items, user_features, item_features, batch_size=256):
+        yhat = self.score(user_vector, item_vector)
+
+        # Need to figure out how to compute biases also for pure raw vectors nicely.
+        print(self.user_bias)
+        print(users_features[:, self._user_id_feature_idx])
+        user_bias = torch.squeeze(
+            self.user_bias(users_features[:, self._user_id_feature_idx])
+        )
+
+        print(self.item_bias)
+        print(items_features[:, self._item_id_feature_idx])
+        item_bias = torch.squeeze(
+            self.item_bias(items_features[:, self._item_id_feature_idx])
+        )
+
+        yhat = yhat + user_bias + item_bias
+        return yhat
+
+    def score(self, user_vector, item_vector):
+        user_vector = torch.as_tensor(user_vector)
+        item_vector = torch.as_tensor(item_vector)
+
+        user_vector = self.user_mlp(user_vector)
+        item_vector = self.item_mlp(item_vector)
+
+        yhat = compute_similarity(
+            x=user_vector, y=item_vector, mode=self.similarity_function
+        )
+        return yhat
+
+    def batch_score(self, users, items, batch_size=256):
         r = []
         for i, user in enumerate(users):
             single_user_scores = []
             # Create pairs of the user with all items
-            single_user_features = user_features[i].repeat(len(items), 1)
-            pairs = torch.tensor([[user, item] for item in items])
-            for ndx in range(0, len(pairs), batch_size):
+            single_user_features = user.repeat(len(items), 1)
+            for ndx in range(0, len(items), batch_size):
                 single_user_scores.append(
                     self.score(
-                        pairs[ndx : ndx + batch_size],
                         single_user_features[ndx : ndx + batch_size],
-                        item_features[ndx : ndx + batch_size],
+                        items[ndx : ndx + batch_size],
                     )
                 )
 
@@ -160,7 +187,7 @@ class NES(nn.Module, BaseModel):
     def training_step(self, batch):
         interactions, users, items = batch
 
-        yhat = self(interactions.long(), users, items).float()
+        yhat = self(users, items).float()
         ytrue = batch[0][:, 2].float()
 
         loss = self.criterion(yhat, ytrue)

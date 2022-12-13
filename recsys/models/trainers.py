@@ -26,7 +26,9 @@ class PytorchLightningLiteTrainer(LightningLite):
                         f"Epoch: {epoch}/{num_epochs}, Loss: {loss:.2f}"
                     )
 
-    def evaluate(self, model, dataset, item_features, user_features, batch_size=512, **kwargs):
+    def evaluate(
+        self, model, dataset, item_features, user_features, batch_size=512, **kwargs
+    ):
         dataloader = DataLoader(dataset, batch_size=batch_size)
         dataloader = self.setup_dataloaders(dataloader)
         model, _ = self.setup(model)
@@ -34,5 +36,5 @@ class PytorchLightningLiteTrainer(LightningLite):
 
         pbar = tqdm(range(len(dataloader)))
         for idx, batch in enumerate(dataloader):
-            results = model.validation_step(batch)
+            model.validation_step(batch)
             pbar.update()

@@ -1,5 +1,5 @@
-torch==1.12
-pytorch_lightning==1.7
+torch
+pytorch_lightning
 scikit-learn
 protobuf
 pandas

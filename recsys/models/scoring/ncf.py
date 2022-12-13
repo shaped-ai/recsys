@@ -5,7 +5,7 @@ from torch import nn
 
 from recsys.models.base import BaseModel
 from recsys.models.trainers import PytorchLightningLiteTrainer
-from recsys.models.utils import schema_to_featureModuleList
+from recsys.models.utils import align_item_user_dimensions, schema_to_featureModuleList
 
 
 class NCF(nn.Module, BaseModel):
@@ -13,37 +13,46 @@ class NCF(nn.Module, BaseModel):
         self,
         data_schema,
         lr_rate: float = 0.01,
-        embedding_size: int = 64,
         feature_embedding_size: int = 8,
+        id_embedding_size: int = 8,
         mlp_layers: List[int] = [512, 256],  # NOQA B006
         accelerator="cpu",
     ):
         super().__init__()
-        interactions_schema = data_schema["interactions"]
 
-        self.n_users = interactions_schema[0]
-        self.n_items = interactions_schema[1]
+        # Find embedding size for both user and item IDS so that they final vector with
+        # the features is the same size
+        user_id_dimension, item_id_dimension = align_item_user_dimensions(
+            data_schema["user_features"],
+            data_schema["item_features"],
+            feature_embedding_size,
+            id_embedding_size,
+        )
 
+        # User features encoding
+        feature_embedding_sizes = {
+            data_schema["user_id"]: user_id_dimension,
+        }
         self.user_features, self.user_feature_dimension = schema_to_featureModuleList(
-            data_schema["user_features"], feature_embedding_size
+            data_schema["user_features"],
+            feature_embedding_size,
+            feature_embedding_sizes,
         )
 
         # Item features encoding
+        feature_embedding_sizes = {
+            data_schema["item_id"]: item_id_dimension,
+        }
         self.item_features, self.item_feature_dimension = schema_to_featureModuleList(
-            data_schema["item_features"], feature_embedding_size
+            data_schema["item_features"],
+            feature_embedding_size,
+            feature_embedding_sizes,
         )
-        aux_user_id_dimensions = self.user_feature_dimension + embedding_size
-        aux_item_id_dimensions = self.item_feature_dimension + embedding_size
 
-        max_dimension = max(aux_user_id_dimensions, aux_user_id_dimensions)
-        user_id_dimensions = embedding_size + (max_dimension - aux_user_id_dimensions)
-        item_id_dimensions = embedding_size + (max_dimension - aux_item_id_dimensions)
-
-        self.user_embedding = nn.Embedding(self.n_users, user_id_dimensions)
-        self.item_embedding = nn.Embedding(self.n_items, item_id_dimensions)
-
-        mlp_layers = [max_dimension * 2] + mlp_layers
-        # Remember activation functions
+        user_item_combined_dimension = (
+            self.user_feature_dimension + self.item_feature_dimension
+        )
+        mlp_layers = [user_item_combined_dimension] + mlp_layers
         self.mlp = torch.nn.Sequential(
             *[
                 nn.Linear(mlp_layers[i], mlp_layers[i + 1])
@@ -51,7 +60,8 @@ class NCF(nn.Module, BaseModel):
             ]
         )
 
-        self.final_linear = nn.Linear(mlp_layers[-1] + max_dimension, 1)
+        gmf_output_dimension = self.user_feature_dimension
+        self.final_linear = nn.Linear(mlp_layers[-1] + gmf_output_dimension, 1)
         self.criterion = (
             torch.nn.BCEWithLogitsLoss()
             if data_schema["objetive"] == "binary"
@@ -63,51 +73,32 @@ class NCF(nn.Module, BaseModel):
         # Trainer
         self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
 
-    def forward(self, interactions, users, items):
-        user = self.user_embedding(interactions[:, 0])
-        item = self.item_embedding(interactions[:, 1])
-
+    def forward(self, users, items):
         user_features = self.encode_user(users)
         item_features = self.encode_item(items)
+        return self.score(user_features, item_features)
 
-        user = (
-            torch.cat([user, user_features], dim=1)
-            if user_features is not None
-            else user
-        )
-        item = (
-            torch.cat([item, item_features], dim=1)
-            if item_features is not None
-            else item
-        )
-
-        mlp_output = self.mlp(torch.cat([user, item], dim=1))
-        gmf_output = user * item
+    def score(self, user_vector, item_vector):
+        user_vector = torch.as_tensor(user_vector)
+        item_vector = torch.as_tensor(item_vector)
+        mlp_output = self.mlp(torch.cat([user_vector, item_vector], dim=1))
+        gmf_output = user_vector * item_vector
 
         x = self.final_linear(torch.cat([gmf_output, mlp_output], dim=1))
         x = torch.squeeze(x)
-
         return x
 
-    def score(self, pair, user_features, item_features):
-        pair = torch.as_tensor(pair)
-        user_features = torch.as_tensor(user_features)
-        item_features = torch.as_tensor(item_features)
-        return self(pair, user_features, item_features)
-
-    def batch_score(self, users, items, user_features, item_features, batch_size=256):
+    def batch_score(self, users, items, batch_size=256):
         r = []
         for i, user in enumerate(users):
             single_user_scores = []
             # Create pairs of the user with all items
-            single_user_features = user_features[i].repeat(len(items), 1)
-            pairs = torch.tensor([[user, item] for item in items])
-            for ndx in range(0, len(pairs), batch_size):
+            single_user_features = user.repeat(len(items), 1)
+            for ndx in range(0, len(items), batch_size):
                 single_user_scores.append(
                     self.score(
-                        pairs[ndx : ndx + batch_size],
                         single_user_features[ndx : ndx + batch_size],
-                        item_features[ndx : ndx + batch_size],
+                        items[ndx : ndx + batch_size],
                     )
                 )
 
@@ -120,7 +111,7 @@ class NCF(nn.Module, BaseModel):
         for _idx, feature in enumerate(self.user_features):
             feature_representation = feature(user[:, feature.idx])
             r.append(feature_representation)
-        r = torch.cat(r, dim=1) if r else None  # Concatenate all features
+        r = torch.cat(r, dim=1).float() if r else None  # Concatenate all features
         return r
 
     def encode_item(self, item):
@@ -128,15 +119,15 @@ class NCF(nn.Module, BaseModel):
         for _idx, feature in enumerate(self.item_features):
             feature_representation = feature(item[:, feature.idx])
             r.append(feature_representation)
-        r = torch.cat(r, dim=1) if r else None  # Concatenate all features
+        r = torch.cat(r, dim=1).float() if r else None  # Concatenate all features
         return r
 
     def training_step(self, batch):
         interactions, users, items = batch
-        yhat = self(interactions.long(), users, items).float()
+        yhat = self(users, items).float()
         yhat = torch.squeeze(yhat)
 
-        ytrue = batch[0][:, 2].float()
+        ytrue = interactions[:, 2].float()
 
         loss = self.criterion(yhat, ytrue)
         return loss

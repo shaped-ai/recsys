@@ -26,9 +26,16 @@ class BaseModel(ABC):
         self._trainer.fit(model=self, dataset=dataset, **kwargs)
 
     def batch_score(self, args):
-        return NotImplementedError("`batch_score` method must be implemented by the user")
+        return NotImplementedError(
+            "`batch_score` method must be implemented by the user"
+        )
+
     def encode_user(self, user):
-        raise NotImplementedError("`encode_user` method must be implemented by the user")
+        raise NotImplementedError(
+            "`encode_user` method must be implemented by the user"
+        )
 
     def encode_item(self, item):
-        raise NotImplementedError("`encode_item` method must be implemented by the user")
+        raise NotImplementedError(
+            "`encode_item` method must be implemented by the user"
+        )

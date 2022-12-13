@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from recsys.datasets import InteractionsDataset, Seq2SeqDataset
+from recsys.datasets import InteractionsDataset
 
 
 @pytest.fixture
@@ -52,6 +52,7 @@ def dummy_user_features():
     users["occupation"], uniques = pd.factorize(users["occupation"])
     users["zip"], uniques = pd.factorize(users["zip"])
     # Set category dtype
+    users["user_id"] = users.user_id.astype("category")
     users["gender"] = users.gender.astype("category")
     users["occupation"] = users.occupation.astype("category")
     users["zip"] = users.zip.astype("category")
@@ -77,6 +78,7 @@ def dummy_item_features():
     items["title"], uniques = pd.factorize(items["title"])
     items["genres"], uniques = pd.factorize(items["genres"])
     # Set category dtype
+    items["item_id"] = items.item_id.astype("category")
     items["title"] = items.title.astype("category")
     items["genres"] = items.genres.astype("category")
 
@@ -93,21 +95,4 @@ def dummy_interaction_dataset(
         dummy_item_features,
         interaction_id="rating",
         sample_negatives=4,
-    )
-
-
-@pytest.fixture
-def dummy_seq2seq_dataset(dummy_interactions, dummy_user_features, dummy_item_features):
-    sorted_sequences = (
-        dummy_interactions.sort_values(by=["timestamp"])
-        .groupby("user_id")["item_id"]
-        .apply(list)
-        .to_frame()
-    )
-    return Seq2SeqDataset(
-        sorted_sequences,
-        dummy_item_features,
-        sequence_id="item_id",
-        item_id="item_id",
-        max_item_id=int(dummy_item_features.item_id.max()),
     )
