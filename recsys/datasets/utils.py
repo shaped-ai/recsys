@@ -10,11 +10,13 @@ class feature:
 
 
 def dataframe_schema(df) -> List[feature]:
-    r = []
+    r = {}
     for col in df.columns.values:
         col_feature = feature(
-            name=col, dtype=df[col].dtype.name, unique_value_count=len(df[col].unique())
+            name=col,
+            dtype=df[col].dtype.name,
+            unique_value_count=df[col].astype("int").max(),
         )
-        r.append(col_feature)
+        r[col] = col_feature
 
     return r

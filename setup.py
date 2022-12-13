@@ -38,8 +38,7 @@ setup_info = dict(
     author="Jaime Ferrando Huertas",
     author_email="fhjaime96@gmail.com",
     description="Lightweight pytorch library to build recommender systems.",
-    python_requires=">=3.6",
-    # Package info
+    python_requires=">=3.7",
     packages=find_packages(exclude=[".vscode", "build_tools", "docs", "tests"]),
     zip_safe=True,
     install_requires=requirements,
