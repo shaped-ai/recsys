@@ -32,7 +32,8 @@ except BaseException:
 
 
 setup_info = dict(
-    name="recsys",
+    # Metadata
+    name="RecSys",
     version=find_version("recsys", "__init__.py"),
     author="Jaime Ferrando Huertas",
     author_email="fhjaime96@gmail.com",
