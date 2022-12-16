@@ -24,5 +24,9 @@ class CategoricalLayer(FeatureLayer):
 
 class NumericalLayer(FeatureLayer):
     def __init__(self, name: str, idx: int) -> None:
-        layer = lambda x: torch.unsqueeze(x, dim=1)
-        super().__init__(name=name, layer=layer, idx=idx)
+
+        super().__init__(name=name, layer=_unqueeze_fn, idx=idx)
+
+
+def _unqueeze_fn(x):
+    return torch.unsqueeze(x, dim=1)

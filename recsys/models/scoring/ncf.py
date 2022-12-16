@@ -16,7 +16,7 @@ class NCF(nn.Module, BaseModel):
         feature_embedding_size: int = 8,
         id_embedding_size: int = 8,
         mlp_layers: List[int] = [512, 256],  # NOQA B006
-        accelerator="cpu",
+        accelerator="auto",
     ):
         super().__init__()
 
@@ -104,7 +104,7 @@ class NCF(nn.Module, BaseModel):
 
             r.append(torch.cat(single_user_scores))
 
-        return torch.stack(r)
+        return torch.stack(r) if len(r) > 0 else torch.tensor(r)
 
     def encode_user(self, user):
         r = []
