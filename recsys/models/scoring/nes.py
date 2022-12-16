@@ -179,7 +179,7 @@ class NES(nn.Module, BaseModel):
 
             r.append(torch.cat(single_user_scores))
 
-        return torch.stack(r)
+        return torch.stack(r) if len(r) > 0 else torch.tensor(r)
 
     def generate_item_matrix(self, items):
         return self.item_embedding(items)
