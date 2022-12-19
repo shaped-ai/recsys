@@ -43,7 +43,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
         else:
             self.target_type = "continuous"
 
-        self.interactions = interactions.values
+        self.interactions = self.interactions.values
         self.sample_negatives = sample_negatives
         if self.sample_negatives > 0:
             self.unique_items = item_features[self.item_id].unique()
