@@ -45,7 +45,9 @@ class PytorchLightningLiteTrainer(LightningLite):
             best_loss = min(best_loss, epoch_loss)
             # Check the last early_stopping N epochs values and if new value is lower than the previous one, stop training
             if early_stopping is not None and epoch > early_stopping:
-                early_check = [epoch_losses[-i]> best_loss for i in range(early_stopping)]
+                early_check = [
+                    epoch_losses[-i] > best_loss for i in range(early_stopping)
+                ]
                 if all(early_check):
                     break
 
