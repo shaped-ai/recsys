@@ -1,3 +1,4 @@
+import torch
 from pytorch_lightning.lite import LightningLite
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -13,12 +14,15 @@ class PytorchLightningLiteTrainer(LightningLite):
         dataset,
         max_num_epochs=50,
         batch_size=512,
+        lr_rate=0.01,
         early_stopping: int = None,
         **kwargs,
     ):
-        dataloader = DataLoader(dataset, batch_size=batch_size)
+        dataloader = DataLoader(
+            dataset, batch_size=batch_size, collate_fn=collate_fn_float32
+        )
         dataloader = self.setup_dataloaders(dataloader)
-        optimizer = model.configure_optimizers()
+        optimizer = model.configure_optimizers(lr_rate)
         model, optimizer = self.setup(model, optimizer)
         model.train()
 
@@ -39,13 +43,12 @@ class PytorchLightningLiteTrainer(LightningLite):
                     )
             epoch_losses.append(epoch_loss)
             best_loss = min(best_loss, epoch_loss)
-            # Check the last 3 epochs values and if new value is lower than the previous one, stop training
+            # Check the last early_stopping N epochs values and if new value is lower than the previous one, stop training
             if early_stopping is not None and epoch > early_stopping:
-                if (
-                    epoch_losses[-1] > best_loss
-                    and epoch_losses[-2] > best_loss
-                    and epoch_losses[-3] > best_loss
-                ):
+                early_check = [
+                    epoch_losses[-i] > best_loss for i in range(early_stopping)
+                ]
+                if all(early_check):
                     break
 
         print("Training finished")
@@ -62,3 +65,8 @@ class PytorchLightningLiteTrainer(LightningLite):
         for idx, batch in enumerate(dataloader):
             model.validation_step(batch)
             pbar.update()
+
+
+def collate_fn_float32(batch_output):
+    batch_output = torch.utils.data.dataloader.default_collate(batch_output)
+    return batch_output

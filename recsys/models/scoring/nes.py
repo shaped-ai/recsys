@@ -136,14 +136,11 @@ class NES(nn.Module, BaseModel):
         yhat = self.score(user_vector, item_vector)
 
         # Need to figure out how to compute biases also for pure raw vectors nicely.
-        print(self.user_bias)
-        print(users_features[:, self._user_id_feature_idx])
+
         user_bias = torch.squeeze(
             self.user_bias(users_features[:, self._user_id_feature_idx])
         )
 
-        print(self.item_bias)
-        print(items_features[:, self._item_id_feature_idx])
         item_bias = torch.squeeze(
             self.item_bias(items_features[:, self._item_id_feature_idx])
         )
@@ -201,8 +198,8 @@ class NES(nn.Module, BaseModel):
 
         return loss
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), self.lr_rate)
+    def configure_optimizers(self, lr_rate):
+        optimizer = torch.optim.AdamW(self.parameters(), lr_rate)
 
         return optimizer
 

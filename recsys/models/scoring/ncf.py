@@ -12,11 +12,10 @@ class NCF(nn.Module, BaseModel):
     def __init__(
         self,
         data_schema,
-        lr_rate: float = 0.01,
         feature_embedding_size: int = 8,
         id_embedding_size: int = 8,
         mlp_layers: List[int] = [512, 256],  # NOQA B006
-        accelerator="auto",
+        accelerator="cpu",
     ):
         super().__init__()
 
@@ -53,22 +52,24 @@ class NCF(nn.Module, BaseModel):
             self.user_feature_dimension + self.item_feature_dimension
         )
         mlp_layers = [user_item_combined_dimension] + mlp_layers
-        self.mlp = torch.nn.Sequential(
-            *[
-                nn.Linear(mlp_layers[i], mlp_layers[i + 1])
-                for i in range(0, len(mlp_layers) - 1)
-            ]
-        )
+        self.mlp = torch.nn.Sequential()
+        for i in range(0, len(mlp_layers) - 1):
+            self.mlp.add_module(
+                f"linear_{i}",
+                nn.Linear(mlp_layers[i], mlp_layers[i + 1]),
+            )
+            self.mlp.add_module(f"relu_{i}", nn.ReLU())
 
         gmf_output_dimension = self.user_feature_dimension
-        self.final_linear = nn.Linear(mlp_layers[-1] + gmf_output_dimension, 1)
+        self.final_linear = torch.nn.Sequential(
+            nn.Linear(mlp_layers[-1] + gmf_output_dimension, 1),
+            nn.Sigmoid(),
+        )
         self.criterion = (
             torch.nn.BCEWithLogitsLoss()
             if data_schema["objetive"] == "binary"
             else torch.nn.MSELoss()
         )
-
-        self.lr_rate = lr_rate
 
         # Trainer
         self._trainer = PytorchLightningLiteTrainer(accelerator=accelerator)
@@ -124,6 +125,7 @@ class NCF(nn.Module, BaseModel):
 
     def training_step(self, batch):
         interactions, users, items = batch
+
         yhat = self(users, items).float()
         yhat = torch.squeeze(yhat)
 
@@ -138,6 +140,6 @@ class NCF(nn.Module, BaseModel):
         loss = self.criterion(yhat, ytrue)
         return loss
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), self.lr_rate)
+    def configure_optimizers(self, lr_rate):
+        optimizer = torch.optim.AdamW(self.parameters(), lr_rate)
         return optimizer

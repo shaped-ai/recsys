@@ -15,6 +15,7 @@ class InteractionsDataset(torch.utils.data.Dataset):
         interaction_id="interaction",
         sample_negatives=0,
     ):
+        _check_inputs(interactions, user_features, item_features, item_id, user_id)
 
         self.interactions = interactions[[user_id, item_id, interaction_id]]
         self.user_id = user_id
@@ -43,10 +44,9 @@ class InteractionsDataset(torch.utils.data.Dataset):
         else:
             self.target_type = "continuous"
 
-        self.interactions = interactions.values
+        self.interactions = self.interactions.values
         self.sample_negatives = sample_negatives
-        if self.sample_negatives > 0:
-            self.unique_items = item_features[self.item_id].unique()
+        self.unique_items = item_features[self.item_id].unique()
 
     def __len__(self):
         return len(self.interactions)
@@ -75,9 +75,9 @@ class InteractionsDataset(torch.utils.data.Dataset):
         item_features = self.item_features[item]
 
         return (
-            np.array([user, item, target]),
-            user_features,
-            item_features,
+            torch.tensor([user, item, target]),
+            torch.tensor(user_features),
+            torch.tensor(item_features),
         )
 
     @property
@@ -90,6 +90,21 @@ class InteractionsDataset(torch.utils.data.Dataset):
             "objetive": self.target_type,
         }
 
-    @staticmethod
-    def collate_fn(batch_output):
-        return batch_output
+
+def _check_inputs(interactions, users, items, item_id, user_id):
+    """
+    Perform healths checks on the input data for the dataset
+    """
+    # Id columns exists
+    assert item_id in items.columns
+    assert user_id in users.columns
+    assert item_id in interactions.columns
+    assert user_id in interactions.columns
+
+    # Id columns are unique for item/user
+    assert len(items[item_id].unique()) == len(items)
+    assert len(users[user_id].unique()) == len(users)
+
+    # All users and items in interactions are in the users and items dataframes
+    assert interactions[item_id].isin(items[item_id]).all()
+    assert interactions[user_id].isin(users[user_id]).all()
