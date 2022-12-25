@@ -10,9 +10,9 @@ class InteractionsDataset(torch.utils.data.Dataset):
         interactions,
         user_features,
         item_features,
-        user_id="user_id",
-        item_id="item_id",
-        interaction_id="interaction",
+        user_id,
+        item_id,
+        interaction_id,
         sample_negatives=0,
     ):
         _check_inputs(interactions, user_features, item_features, item_id, user_id)

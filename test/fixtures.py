@@ -93,6 +93,8 @@ def dummy_interaction_dataset(
         dummy_interactions[["user_id", "item_id", "rating"]],
         dummy_user_features,
         dummy_item_features,
+        user_id="user_id",
+        item_id="item_id",
         interaction_id="rating",
         sample_negatives=4,
     )
