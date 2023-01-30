@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class BaseModel(ABC):
-    # PL Related methods
     @abstractmethod
     def forward(self, x):
         raise NotImplementedError("`forward` method must be implemented by the user")
