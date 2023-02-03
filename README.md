@@ -21,13 +21,6 @@ Install latest release from pypi with:
 pip install recsys
 ```
 
-## Usage
-
-Here is an example of how to use the library to train and use a recommendation system:
-
-#TODO
-
-
 ## Testing
 To run the library test run `pytest` from the main directory
 

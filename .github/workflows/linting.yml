@@ -1,17 +1,45 @@
-name: Pylint autoflake, isort, black
+name: python_linting
 
 on:
   pull_request:
     branches:
-      - master
-  push:
-    branches:
-      - master
+      - main
 
 jobs:
   build:
     name: python linting
     runs-on: ubuntu-latest
     steps:
-       - name: Python Linter
-         uses: jiwidi/python-lint-action@main
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install libraries
+        run: |
+          python -m pip install autoflake isort black ruff
+      ##Autoflake does not return code 1 when changes are needed so we capture the output to manually return code 1 if needed.
+      ##There is an option to run autoflake with -c to have such exit code but then no diff will be printed.
+      - name: Run autoflake
+        if: always()
+        run: |
+          output="$(autoflake . -r --remove-all-unused-imports)"
+          if [[ -n $output ]]
+          then
+           printf "%s\n" "$output"
+           exit 1
+          else
+           exit 0
+          fi
+      - name: Run isort
+        if: always()
+        run: |
+          isort . --profile black --line-length 88 --diff -c
+      - name: Run black
+        if: always()
+        run: |
+          black . --diff --color --check --line-length 88 --extend-exclude _dag_template.py
+      - name: Run ruff
+        if: always()
+        run: |
+          ruff . --per-file-ignores model_dag_template.py:E501

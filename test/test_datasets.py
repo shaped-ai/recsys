@@ -18,6 +18,8 @@ def test_interactions_dataset(
         dummy_user_features,
         dummy_item_features,
         interaction_id="rating",
+        user_id="user_id",
+        item_id="item_id",
         sample_negatives=1,
     )
     dummy_interaction_dataset[0]
